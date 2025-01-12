@@ -10,6 +10,9 @@ from utils import compare_dimensions, save_dialogues_to_jsonl, categorize
 from templates import normbank_template, verify_hofstede_template
 from parsers import HofstedeDimension
 
+# Set random seed for reproducibility
+random_seed = 1234
+
 # Create NormBank prompt template
 normbank_prompt = PromptTemplate(
     template=normbank_template,
@@ -45,8 +48,12 @@ def main(args):
     # Step 3: Load NormBank CSV and prepare sample
     file_path = 'datasets/NormBank.csv'
     df = pd.read_csv(file_path)
-    df_expected = df[df.norm == "expected"]
-
+    if args.norm == 'all':
+        df_expected = df
+    else:
+        df_expected = df[df.norm == args.norm]
+    df_expected = df_expected.sample(n=args.num_sample, random_state=random_seed)
+    
     # Step 4: Loop through the number of samples specified by the user, with progress bar
     for i in tqdm(range(args.num_sample), desc="Generating dialogues", unit="sample"):
         sample = df_expected.iloc[i].to_dict()
@@ -63,6 +70,7 @@ def main(args):
         verify_hofstede_answer = verify_hofstede_chain.invoke({"dialogues": dialogues})
         
         match_count = compare_dimensions(country_dimension, verify_hofstede_answer)
+        print(f'MATCH COUNT : {match_count}')
         # Step 4.4 : save file to jsonl
         save_dialogues_to_jsonl(
             sample["setting"], sample["constraints"], args.country, verify_hofstede_answer, dialogues, match_count)
@@ -71,5 +79,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Simulate a conversation between two agents.")
     parser.add_argument('--country', type=str, required=True, help="Country for the conversation")
     parser.add_argument('--num_sample', type=int, required=True, help="Number of samples for dialogue generation")
+    parser.add_argument('--norm', type=str, choices=['taboo', 'normal', 'expected', 'all'], default='all', help='Specify the norm category')
     args = parser.parse_args()
     main(args)

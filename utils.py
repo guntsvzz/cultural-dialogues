@@ -9,7 +9,7 @@ def compare_dimensions(country_dimension, verify_hofstede_answer):
 
 # Save the dialogues if match_count >= 4
 def save_dialogues_to_jsonl(situation, constraints, country, verify_hofstede_answer, dialogues, match_count, file_path='dialogues.jsonl'):
-    if match_count >= 5:
+    if match_count >= 4:
         data = {
             'situation':situation,
             'constraints':constraints,
